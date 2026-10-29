@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>節目逐字稿搜尋</title>
+<meta name="description" content="搜尋節目中提到的作品、角色與話題，直接跳到那一集、那一分鐘。">
+<style>
+:root{
+  --bg:#f6f5f2; --surface:#ffffff; --surface-2:#efede8; --text:#1d1c1a; --muted:#6b675f;
+  --line:#e2dfd8; --accent:#d9480f; --accent-ink:#ffffff; --mark:#ffe08a; --mark-ink:#1d1c1a;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141413; --surface:#1e1d1b; --surface-2:#2a2926; --text:#f0eee9; --muted:#a19d94;
+    --line:#34322e; --accent:#ff7a3d; --accent-ink:#141413; --mark:#7a5a00; --mark-ink:#fff6d8;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141413; --surface:#1e1d1b; --surface-2:#2a2926; --text:#f0eee9; --muted:#a19d94;
+  --line:#34322e; --accent:#ff7a3d; --accent-ink:#141413; --mark:#7a5a00; --mark-ink:#fff6d8;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  line-height:1.65;padding-bottom:120px}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px}
+header{padding:40px 0 8px}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.brand img{width:48px;height:48px;border-radius:10px;object-fit:cover;background:var(--surface-2)}
+.brand h1{font-size:20px;margin:0;line-height:1.3}
+.brand p{margin:0;color:var(--muted);font-size:14px}
+.search{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--line);
+  border-radius:14px;padding:4px 6px 4px 14px;box-shadow:var(--shadow)}
+.search-box:focus-within{border-color:var(--accent)}
+.search-box svg{flex:none;color:var(--muted)}
+#q::-webkit-search-cancel-button{display:none}
+#q{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--text);font-size:18px;padding:10px 0;font-family:inherit}
+#clear{border:0;background:transparent;color:var(--muted);font-size:22px;cursor:pointer;padding:4px 10px;display:none}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;
+  color:var(--muted);font-size:14px;margin-top:10px;min-height:28px}
+.sort{display:flex;gap:4px}
+.sort button{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;
+  padding:3px 12px;font-size:13px;cursor:pointer;font-family:inherit}
+.sort button[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.alias-note{font-size:13px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:999px;
+  padding:5px 14px;font-size:14px;cursor:pointer;font-family:inherit}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+.stat b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted);font-size:13px}
+.ep{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:12px 0;box-shadow:var(--shadow)}
+.ep-head{display:flex;gap:12px;align-items:baseline;justify-content:space-between}
+.ep-title{font-weight:650;font-size:16px;margin:0;line-height:1.45}
+.ep-meta{color:var(--muted);font-size:13px;margin-top:2px}
+.count{flex:none;background:var(--surface-2);border-radius:999px;padding:2px 10px;font-size:13px;color:var(--muted);white-space:nowrap}
+.hits{list-style:none;margin:10px 0 0;padding:0}
+.hit{display:flex;gap:12px;padding:8px 0;border-top:1px dashed var(--line);align-items:flex-start}
+.play{flex:none;display:inline-flex;align-items:center;gap:5px;border:0;background:var(--accent);color:var(--accent-ink);
+  border-radius:8px;padding:4px 10px;font-size:14px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;font-family:inherit;margin-top:2px}
+.play:hover{filter:brightness(1.08)}
+.play.playing{outline:2px solid var(--accent);outline-offset:2px}
+.ctx{font-size:15px;color:var(--text);word-break:break-word}
+.ctx .dim{color:var(--muted)}
+mark{background:var(--mark);color:var(--mark-ink);border-radius:3px;padding:0 2px}
+.more{border:0;background:transparent;color:var(--accent);font-size:14px;cursor:pointer;padding:8px 0 0;font-family:inherit}
+.empty{text-align:center;color:var(--muted);padding:48px 0}
+.loadmore{display:block;margin:20px auto;border:1px solid var(--line);background:var(--surface);color:var(--text);
+  border-radius:10px;padding:10px 20px;font-size:15px;cursor:pointer;font-family:inherit}
+.player{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line);
+  box-shadow:0 -4px 20px rgba(0,0,0,.08);transform:translateY(110%);transition:transform .25s}
+.player.show{transform:none}
+.player .wrap{display:flex;flex-direction:column;gap:6px;padding:10px 16px 14px}
+.p-top{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px}
+.p-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-actions{display:flex;gap:6px;flex:none}
+.p-actions button,.p-actions a{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:8px;
+  padding:3px 10px;font-size:13px;cursor:pointer;text-decoration:none;font-family:inherit}
+audio{width:100%;height:40px}
+.toast{position:fixed;left:50%;bottom:130px;transform:translateX(-50%);background:var(--text);color:var(--bg);
+  padding:8px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast.show{opacity:1}
+footer{color:var(--muted);font-size:13px;text-align:center;padding:32px 0}
+@media (max-width:560px){
+  header{padding-top:24px}
+  .stats{grid-template-columns:repeat(3,1fr);gap:6px}
+  .stat{padding:10px}.stat b{font-size:19px}
+  .hit{gap:10px}.ctx{font-size:14.5px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <img id="cover" alt="" hidden>
+      <div>
+        <h1 id="show-title">節目逐字稿搜尋</h1>
+        <p>輸入作品、角色或話題，直接跳到提到它的那一集、那一分鐘</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="search">
+    <label class="search-box">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="例如：咒術迴戰、芙莉蓮、宮崎駿…" autocomplete="off" enterkeyhint="search" aria-label="搜尋逐字稿">
+      <button id="clear" type="button" aria-label="清除">×</button>
+    </label>
+    <div class="toolbar" id="toolbar" hidden>
+      <span id="summary"></span>
+      <div class="sort" role="group" aria-label="排序">
+        <button type="button" data-sort="count" aria-pressed="true">提及最多</button>
+        <button type="button" data-sort="new" aria-pressed="false">最新</button>
+        <button type="button" data-sort="old" aria-pressed="false">最舊</button>
+      </div>
+    </div>
+    <div class="alias-note" id="alias-note"></div>
+  </div>
+
+  <main id="main"><div class="empty">載入逐字稿中…</div></main>
+  <footer id="footer"></footer>
+</div>
+
+<div class="player" id="player" aria-live="polite">
+  <div class="wrap">
+    <div class="p-top">
+      <span class="p-title" id="p-title"></span>
+      <div class="p-actions">
+        <button type="button" id="p-back" title="倒退 15 秒">−15s</button>
+        <button type="button" id="p-share" title="複製這個時間點的連結">分享此刻</button>
+        <a id="p-link" target="_blank" rel="noopener" hidden>單集頁面</a>
+      </div>
+    </div>
+    <audio id="audio" controls preload="none"></audio>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const PAGE = 30;          // 一次顯示幾集
+  const SHOW_HITS = 3;      // 每集預設顯示幾個片段
+  const MERGE_SEC = 25;     // 間隔小於幾秒的提及合併成同一段
+  const LEAD_SEC = 3;       // 跳轉時提前幾秒開始播
+
+  const $ = s => document.querySelector(s);
+  const qEl = $("#q"), mainEl = $("#main"), audio = $("#audio");
+  let DATA = null, EPS = [], ALIAS = new Map(), sortMode = "count", lastResults = [], shown = PAGE, currentEp = null;
+
+  // ---- 文字正規化：全形英數→半形、英文小寫（長度不變，方便對應回原文） ----
+  function norm(s){
+    let out = "";
+    for (let i = 0; i < s.length; i++){
+      let c = s.charCodeAt(i);
+      if (c >= 0xFF01 && c <= 0xFF5E) c -= 0xFEE0;
+      else if (c === 0x3000) c = 32;
+      if (c < 0xD800 || c > 0xDFFF) out += String.fromCharCode(c).toLowerCase().charAt(0);
+      else out += s[i];
+    }
+    return out;
+  }
+  const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const fmt = sec => { sec = Math.max(0, sec|0); const h = sec/3600|0, m = (sec%3600)/60|0, s = sec%60;
+    return h ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`; };
+
+  // ---- 載入資料 ----
+  fetch("data.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(d => {
+    DATA = d;
+    EPS = d.episodes.map(ep => {
+      const offs = []; let joined = "";
+      ep.x.forEach(t => { offs.push(joined.length); joined += t + " "; });
+      return Object.assign(ep, { offs, joined, njoined: norm(joined) });
+    });
+    for (const [k, list] of Object.entries(d.aliases || {})){
+      const group = [k, ...list].map(norm);
+      group.forEach(w => ALIAS.set(w, { name: k, words: group, display: [k, ...list] }));
+    }
+    const show = d.show || {};
+    if (show.title){ $("#show-title").textContent = show.title + "｜逐字稿搜尋"; document.title = show.title + "｜逐字稿搜尋"; }
+    if (show.image){ $("#cover").src = show.image; $("#cover").hidden = false; }
+    $("#footer").textContent = `收錄 ${EPS.length} 集逐字稿・資料更新於 ${d.built}・逐字稿為自動轉錄，可能有錯字`;
+    readUrl();
+  }).catch(err => {
+    mainEl.innerHTML = `<div class="empty">讀不到 data.json（${esc(String(err.message||err))}）。<br>
+      如果你是直接雙擊打開 index.html，請改用「5_本機預覽網站.bat」開啟。</div>`;
+  });
+
+  // ---- 搜尋 ----
+  function expand(term){
+    const t = norm(term);
+    const a = ALIAS.get(t);
+    return a ? { label: term, words: a.words, alias: a.name, display: a.display } : { label: term, words: [t] };
+  }
+  // 每個字之間允許一個空白（字幕換行處會有空白），例如「鏈鋸 人」也算「鏈鋸人」
+  const RE_CACHE = new Map();
+  function toRe(w){
+    if (!RE_CACHE.has(w)){
+      const chars = [...w.replace(/\s+/g, "")].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+      RE_CACHE.set(w, chars.length ? new RegExp(chars.join(" ?"), "g") : null);
+    }
+    return RE_CACHE.get(w);
+  }
+  function hasAny(hay, words){ return words.some(w => { const re = toRe(w); if (!re) return false; re.lastIndex = 0; return re.test(hay); }); }
+  function findAll(hay, words){
+    const pos = [];
+    for (const w of words){ const re = toRe(w); if (!re) continue; re.lastIndex = 0; let m;
+      while ((m = re.exec(hay))) { pos.push([m.index, m[0].length]); re.lastIndex = m.index + 1; } }
+    pos.sort((a,b) => a[0]-b[0] || b[1]-a[1]);
+    const out = []; let end = -1;   // 去掉重疊（例如「葬送的芙莉蓮」裡的「芙莉蓮」只算一次）
+    for (const x of pos){ if (x[0] >= end){ out.push(x); end = x[0] + x[1]; } }
+    return out;
+  }
+  function segAt(offs, pos){ let lo = 0, hi = offs.length - 1;
+    while (lo < hi){ const mid = (lo + hi + 1) >> 1; if (offs[mid] <= pos) lo = mid; else hi = mid - 1; } return lo; }
+
+  function search(q){
+    const terms = q.trim().split(/\s+/).filter(Boolean).map(expand);
+    if (!terms.length) return null;
+    const [first, ...rest] = terms;
+    const results = [];
+    for (const ep of EPS){
+      if (!rest.every(t => hasAny(ep.njoined, t.words))) continue;
+      const pos = findAll(ep.njoined, first.words);
+      if (!pos.length) continue;
+      const moments = []; let lastSeg = -1;
+      for (const [p] of pos){
+        const si = segAt(ep.offs, p);
+        if (si === lastSeg) { moments[moments.length-1].n++; continue; }
+        const prev = moments[moments.length-1];
+        if (prev && ep.t[si] - ep.t[prev.seg] < MERGE_SEC && si - prev.last <= 3){ prev.n++; prev.last = si; lastSeg = si; continue; }
+        moments.push({ seg: si, last: si, n: 1 }); lastSeg = si;
+      }
+      results.push({ ep, moments, count: pos.length });
+    }
+    return { terms, results };
+  }
+
+  function highlight(text, terms){
+    const nt = norm(text), ranges = [];
+    terms.forEach(t => ranges.push(...findAll(nt, t.words)));
+    ranges.sort((a,b) => a[0]-b[0]);
+    let out = "", i = 0;
+    for (const [p, len] of ranges){ if (p < i) continue;
+      out += esc(text.slice(i, p)) + "<mark>" + esc(text.slice(p, p+len)) + "</mark>"; i = p + len; }
+    return out + esc(text.slice(i));
+  }
+  function context(ep, m, terms){
+    const a = Math.max(0, m.seg - 1), b = Math.min(ep.x.length - 1, m.last + 1);
+    let before = a < m.seg ? ep.x[a] : "", after = b > m.last ? ep.x[b] : "";
+    if (before.length > 40) before = "…" + before.slice(-40);
+    if (after.length > 40) after = after.slice(0, 40) + "…";
+    const core = ep.x.slice(m.seg, m.last + 1).join(" ");
+    return `<span class="dim">${highlight(before, terms)}</span>${highlight(core, terms)}<span class="dim">${highlight(after, terms)}</span>`;
+  }
+
+  // ---- 畫面 ----
+  function renderHome(){
+    $("#toolbar").hidden = true; $("#alias-note").textContent = "";
+    const hours = EPS.reduce((s, e) => s + (e.t[e.t.length-1] || 0), 0) / 3600;
+    const chars = EPS.reduce((s, e) => s + e.joined.length, 0);
+    const sugg = Object.keys(DATA.aliases || {}).slice(0, 14);
+    mainEl.innerHTML = `
+      <div class="stats">
+        <div class="stat"><b>${EPS.length}</b><span>集</span></div>
+        <div class="stat"><b>${Math.round(hours)}</b><span>小時</span></div>
+        <div class="stat"><b>${(chars/10000).toFixed(0)} 萬</b><span>字逐字稿</span></div>
+      </div>
+      ${sugg.length ? `<div class="alias-note">試試看：</div><div class="chips">${sugg.map(s => `<button class="chip" data-q="${esc(s)}">${esc(s)}</button>`).join("")}</div>` : ""}`;
+  }
+
+  function render(){
+    const q = qEl.value;
+    $("#clear").style.display = q ? "block" : "none";
+    if (!DATA) return;
+    const r = search(q);
+    if (!r){ renderHome(); return; }
+    let list = r.results.slice();
+    if (sortMode === "count") list.sort((a,b) => b.count - a.count || b.ep.date.localeCompare(a.ep.date));
+    else if (sortMode === "new") list.sort((a,b) => b.ep.date.localeCompare(a.ep.date));
+    else list.sort((a,b) => a.ep.date.localeCompare(b.ep.date));
+    lastResults = list;
+
+    const total = list.reduce((s, x) => s + x.count, 0);
+    $("#toolbar").hidden = false;
+    $("#summary").textContent = list.length ? `${list.length} 集提到，共 ${total} 次` : "";
+    const aliasT = r.terms.filter(t => t.alias);
+    $("#alias-note").textContent = aliasT.length ? "同時搜尋別名：" + aliasT.map(t => t.display.join("、")).join("；") : "";
+
+    if (!list.length){
+      mainEl.innerHTML = `<div class="empty">找不到「${esc(q)}」。<br>試試簡稱、別名，或只輸入部分字詞（自動轉錄偶爾會打錯字）。</div>`;
+      return;
+    }
+    mainEl.innerHTML = list.slice(0, shown).map((res, idx) => epCard(res, idx, r.terms)).join("") +
+      (list.length > shown ? `<button class="loadmore" id="loadmore">再顯示 ${Math.min(PAGE, list.length - shown)} 集（共 ${list.length} 集）</button>` : "");
+  }
+
+  function epCard(res, idx, terms){
+    const { ep, moments } = res;
+    const items = moments.map((m, i) => `
+      <li class="hit" ${i >= SHOW_HITS ? "hidden" : ""}>
+        <button class="play" data-ep="${idx}" data-t="${ep.t[m.seg]}" aria-label="從 ${fmt(ep.t[m.seg])} 開始播放">
+          <svg width="10" height="12" viewBox="0 0 10 12" aria-hidden="true"><path d="M0 0l10 6-10 6z" fill="currentColor"/></svg>${ep.approx ? "約 " : ""}${fmt(ep.t[m.seg])}
+        </button>
+        <div class="ctx">${context(ep, m, terms)}</div>
+      </li>`).join("");
+    const epLabel = ep.num != null && !/\d/.test(ep.title) ? `EP${ep.num}・` : "";
+    return `<article class="ep">
+      <div class="ep-head">
+        <div><h2 class="ep-title">${esc(ep.title)}</h2><div class="ep-meta">${epLabel}${ep.date}${ep.approx ? "・時間為估算" : ""}</div></div>
+        <span class="count">${res.count} 次</span>
+      </div>
+      <ul class="hits">${items}</ul>
+      ${moments.length > SHOW_HITS ? `<button class="more">顯示其餘 ${moments.length - SHOW_HITS} 段 ▾</button>` : ""}
+    </article>`;
+  }
+
+  // ---- 播放 ----
+  function playAt(ep, t){
+    currentEp = ep;
+    $("#player").classList.add("show");
+    $("#p-title").textContent = ep.title;
+    const link = $("#p-link"); link.hidden = !ep.link; if (ep.link) link.href = ep.link;
+    const start = Math.max(0, t - LEAD_SEC);
+    const go = () => { audio.currentTime = start; audio.play().catch(() => {}); };
+    if (audio.dataset.ep !== ep.id){
+      audio.dataset.ep = ep.id; audio.src = ep.audio; audio.preload = "auto";
+      audio.addEventListener("loadedmetadata", go, { once: true }); audio.load();
+    } else go();
+  }
+
+  function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); }
+
+  // ---- 網址同步（可分享搜尋結果與時間點） ----
+  function readUrl(){
+    const p = new URLSearchParams(location.search);
+    const hash = new URLSearchParams(location.hash.slice(1));
+    const q = hash.get("q") || p.get("q") || "";
+    qEl.value = q; shown = PAGE; render();
+    const epId = p.get("ep"), t = +p.get("t") || 0;
+    if (epId){ const ep = EPS.find(e => e.id === epId);
+      if (ep){ $("#player").classList.add("show"); $("#p-title").textContent = ep.title + "（按播放鍵開始）";
+        currentEp = ep; audio.dataset.ep = ep.id; audio.src = ep.audio;
+        audio.addEventListener("loadedmetadata", () => { audio.currentTime = t; }, { once: true });
+        audio.preload = "metadata"; audio.load(); } }
+  }
+  let timer;
+  qEl.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => {
+    shown = PAGE; render();
+    const q = qEl.value.trim();
+    history.replaceState(null, "", location.pathname + location.search + (q ? "#q=" + encodeURIComponent(q) : ""));
+  }, 200); });
+  window.addEventListener("hashchange", readUrl);
+
+  $("#clear").addEventListener("click", () => { qEl.value = ""; qEl.dispatchEvent(new Event("input")); qEl.focus(); });
+  document.querySelectorAll(".sort button").forEach(b => b.addEventListener("click", () => {
+    sortMode = b.dataset.sort; shown = PAGE;
+    document.querySelectorAll(".sort button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    render();
+  }));
+  mainEl.addEventListener("click", e => {
+    const play = e.target.closest(".play");
+    if (play){ document.querySelectorAll(".play.playing").forEach(x => x.classList.remove("playing"));
+      play.classList.add("playing"); playAt(lastResults[+play.dataset.ep].ep, +play.dataset.t); return; }
+    const more = e.target.closest(".more");
+    if (more){ more.closest(".ep").querySelectorAll(".hit[hidden]").forEach(li => li.hidden = false); more.remove(); return; }
+    const chip = e.target.closest(".chip");
+    if (chip){ qEl.value = chip.dataset.q; qEl.dispatchEvent(new Event("input")); return; }
+    if (e.target.id === "loadmore"){ shown += PAGE; render(); }
+  });
+  $("#p-back").addEventListener("click", () => { audio.currentTime = Math.max(0, audio.currentTime - 15); });
+  $("#p-share").addEventListener("click", () => {
+    if (!currentEp) return;
+    const q = qEl.value.trim();
+    const url = `${location.origin}${location.pathname}?ep=${encodeURIComponent(currentEp.id)}&t=${Math.floor(audio.currentTime)}${q ? "#q=" + encodeURIComponent(q) : ""}`;
+    (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(
+      () => toast(`已複製 ${fmt(audio.currentTime)} 的連結`), () => prompt("複製這個連結：", url));
+  });
+  document.addEventListener("keydown", e => { if (e.key === "/" && document.activeElement !== qEl){ e.preventDefault(); qEl.focus(); } });
+})();
+</script>
+</body>
+</html>
