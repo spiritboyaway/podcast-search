@@ -124,6 +124,16 @@ footer{padding:40px 0 20px;text-align:center;font-size:13px;color:var(--muted)}
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .social a{background:#fff;color:#1b1a18} }
 :root[data-theme="dark"] .social a{background:#fff;color:#1b1a18}
 
+/* 深色模式：黑色描邊改成琥珀色，避免在深底上消失 */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .search-box{box-shadow:4px 4px 0 var(--amber)}
+  :root:not([data-theme="light"]) .stat, :root:not([data-theme="light"]) .loadmore{box-shadow:3px 3px 0 var(--amber)}
+  :root:not([data-theme="light"]) .fchip[aria-pressed="true"]{background:var(--amber);color:#1b1a18}
+}
+:root[data-theme="dark"] .search-box{box-shadow:4px 4px 0 var(--amber)}
+:root[data-theme="dark"] .stat, :root[data-theme="dark"] .loadmore{box-shadow:3px 3px 0 var(--amber)}
+:root[data-theme="dark"] .fchip[aria-pressed="true"]{background:var(--amber);color:#1b1a18}
+
 @media (max-width:560px){
   header{padding-top:22px}
   .logo{width:64px;height:64px;font-size:38px}
