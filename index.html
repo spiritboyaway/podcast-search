@@ -140,6 +140,10 @@ audio{width:100%;height:40px}
 .ask-cta{display:block;margin:0 auto 16px;max-width:560px;background:var(--hl);color:#1b1a18;text-decoration:none;font-size:14px;
   border:2px solid #1b1a18;border-radius:10px;padding:8px 14px;box-shadow:3px 3px 0 #1b1a18}
 
+
+a.logo{text-decoration:none}
+a.logo:hover{filter:brightness(1.05)}
+
 /* ---------- 頁尾 ---------- */
 footer{padding:40px 0 20px;text-align:center;font-size:13px;color:var(--muted)}
 .social{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -187,7 +191,7 @@ footer{padding:40px 0 20px;text-align:center;font-size:13px;color:var(--muted)}
 <div class="wrap">
   <header>
     <div class="brand">
-      <div class="logo" aria-hidden="true">隱</div>
+      <a class="logo" href="https://www.youtube.com/@spiritboyaway" target="_blank" rel="noopener" title="神隱少年團 YouTube 頻道" aria-label="神隱少年團 YouTube 頻道">隱</a>
       <div>
         <h1><span class="nw">神隱少年團</span><span class="nw">Podcast關鍵字搜尋</span></h1>
         <p class="full">動畫漫畫遊戲咖啡閒聊次文化電台暨物語廚俱樂部</p>
@@ -346,7 +350,7 @@ footer{padding:40px 0 20px;text-align:center;font-size:13px;color:var(--muted)}
     for (const [k, list] of Object.entries(d.aliases || {})){
       const group = [k, ...list].map(norm);
       group.forEach(w => ALIAS.set(w, { name: k, words: group, display: [k, ...list] })); }
-    $("#footnote").textContent = `收錄 ${EPS.length} 集逐字稿・更新於 ${d.built}・逐字稿可能有錯字，歡迎到 IG 告訴我們`;
+    $("#footnote").textContent = `收錄 ${EPS.length} 集逐字稿・更新於 ${d.built}・逐字稿與說話者為自動整理，可能有誤，歡迎到 IG 告訴我們`;
     readUrl();
   }).catch(err => { mainEl.innerHTML = `<div class="empty"><b>讀不到逐字稿資料</b>${esc(String(err.message||err))}</div>`; });
 
@@ -397,7 +401,7 @@ footer{padding:40px 0 20px;text-align:center;font-size:13px;color:var(--muted)}
     for (const [start, k] of ep.sr){ if (start > si) break; who = k; }
     if (who < 0) return "";
     const name = ep.sp[who];
-    return AVATAR[name] ? `<span class="spk"><img src="${AVATAR[name]}" alt="">${esc(name)}：</span>`
+    return AVATAR[name] ? `<span class="spk"><img src="${AVATAR[name]}" alt="">${esc(name === "鳳梨" ? "鳳梨索" : name)}：</span>`
                         : `<span class="spk"><span class="dot">客</span>${esc(name)}：</span>`;
   }
   function context(ep, m, terms){
