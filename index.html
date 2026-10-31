@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>神隱少年團Podcast關鍵字搜尋</title>
 <meta name="description" content="搜尋神隱少年團 Podcast 提到的作品、角色與話題，直接跳到那一集、那一分鐘。">
 <meta name="theme-color" content="#edb65a">
+<meta name="color-scheme" content="light">
 <link rel="icon" type="image/png" sizes="48x48" href="favicon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -239,12 +240,14 @@ footer{padding:40px 0 20px;text-align:center;font-size:13px;color:var(--muted)}
 (() => {
   const PAGE = 30, SHOW_HITS = 3, MERGE_SEC = 25, LEAD_SEC = 3;
 
-  // ---- 搜尋統計（GoatCounter，免費、不追蹤個人）：申請後把代號填在這裡，例如 "spiritboyaway"；空白就不統計 ----
+  // ---- 搜尋關鍵字統計（GoatCounter，免費、不追蹤個人；只記搜尋詞，不記瀏覽人次）：申請後把代號填在這裡，例如 "spiritboyaway"；空白就不統計 ----
   const GOATCOUNTER = "";
   if (GOATCOUNTER){
     const s = document.createElement("script");
     s.async = true; s.src = "https://gc.zgo.at/count.js";
     s.dataset.goatcounter = `https://${GOATCOUNTER}.goatcounter.com/count`;
+    // 不記錄瀏覽人次，只記錄搜尋關鍵字
+    s.dataset.goatcounterSettings = JSON.stringify({ no_onload: true });
     document.head.appendChild(s);
   }
   const sent = new Set(); let trackTimer;
