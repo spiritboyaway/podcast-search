@@ -108,6 +108,9 @@ header{padding:36px 0 6px}
 .play.playing{background:#1b1a18;color:var(--hl)}
 .ctx{font-size:15px;word-break:break-word;color:#1b1a18}
 .ctx .dim{color:#8a8377}
+.spk{display:inline-flex;align-items:center;gap:4px;font-weight:900;font-size:12.5px;margin-right:4px;white-space:nowrap;vertical-align:-2px}
+.spk img{width:22px;height:22px;border-radius:50%;border:1.5px solid #1b1a18;object-fit:cover;background:#fff}
+.spk .dot{width:22px;height:22px;border-radius:50%;border:1.5px solid #1b1a18;display:inline-grid;place-items:center;font-size:11px;background:#e6dfd2;line-height:1}
 mark{background:linear-gradient(transparent 35%,var(--hl) 35%,var(--hl) 92%,transparent 92%);color:inherit;font-weight:700;padding:0 1px}
 .more{border:0;background:transparent;color:#1b1a18;font-size:14px;font-weight:700;cursor:pointer;padding:10px 0 0;font-family:inherit;text-decoration:underline;text-underline-offset:3px}
 .handle{display:inline-block;margin-top:12px;background:#1b1a18;color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:3px;text-decoration:none}
@@ -168,9 +171,19 @@ footer{padding:40px 0 20px;text-align:center;font-size:13px;color:var(--muted)}
   .hit{flex-direction:column;gap:6px}
   .play{margin-top:0}
 }
+
+/* ---------- 動態背景：緩慢飄動的漫畫網點 ---------- */
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.bg .tone{position:absolute;inset:-60px;
+  background-image:radial-gradient(rgba(27,26,24,.075) 1.6px,transparent 1.8px);background-size:22px 22px;
+  animation:tone 28s linear infinite;will-change:transform}
+@keyframes tone{to{transform:translate(22px,22px)}}
+@media (max-width:760px){ .bg .tone{opacity:.8} }
+@media (prefers-reduced-motion: reduce){ .bg .tone{animation:none} }
 </style>
 </head>
 <body>
+<div class="bg" aria-hidden="true"><div class="tone"></div></div>
 <div class="wrap">
   <header>
     <div class="brand">
@@ -376,6 +389,17 @@ footer{padding:40px 0 20px;text-align:center;font-size:13px;color:var(--muted)}
     let out = "", i = 0;
     for (const [p, len] of ranges){ if (p < i) continue; out += esc(text.slice(i, p)) + "<mark>" + esc(text.slice(p, p+len)) + "</mark>"; i = p + len; }
     return out + esc(text.slice(i)); }
+  // 說話者（step6 辨識）：這一句是誰說的 → 小頭像
+  const AVATAR = { "二百五": "img/host-250.webp", "鳳梨": "img/host-pineapple.webp" };
+  function speaker(ep, si){
+    if (!ep.sp || !ep.sr) return "";
+    let who = -1;
+    for (const [start, k] of ep.sr){ if (start > si) break; who = k; }
+    if (who < 0) return "";
+    const name = ep.sp[who];
+    return AVATAR[name] ? `<span class="spk"><img src="${AVATAR[name]}" alt="">${esc(name)}：</span>`
+                        : `<span class="spk"><span class="dot">客</span>${esc(name)}：</span>`;
+  }
   function context(ep, m, terms){
     const a = Math.max(0, m.seg - 1), b = Math.min(ep.x.length - 1, m.last + 1);
     let before = a < m.seg ? ep.x[a] : "", after = b > m.last ? ep.x[b] : "";
@@ -465,7 +489,7 @@ footer{padding:40px 0 20px;text-align:center;font-size:13px;color:var(--muted)}
         <button class="play" data-ep="${idx}" data-t="${ep.t[m.seg]}" aria-label="從 ${fmt(ep.t[m.seg])} 開始播放">
           <svg width="9" height="11" viewBox="0 0 10 12" aria-hidden="true"><path d="M0 0l10 6-10 6z" fill="currentColor"/></svg>${ep.approx ? "約" : ""}${fmt(ep.t[m.seg])}
         </button>
-        <div class="ctx">${context(ep, m, terms)}</div>
+        <div class="ctx">${speaker(ep, m.seg)}${context(ep, m, terms)}</div>
       </li>`).join("");
     return `<article class="ep" data-s="${info.s}">
       ${info.badge ? `<img class="badge" src="manda-badge.png" alt="漫打旋風" width="76" height="76">` : ""}
